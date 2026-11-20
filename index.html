@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peta Sebaran Domisili Anggota Racana Gadjah Mada</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+      color: #1f2937;
+    }
+
+    /* Navbar */
+    .navbar {
+      height: 60px;
+      background-color: #1e293b;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: relative;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .navbar-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .navbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .search-box {
+      padding: 7px 12px;
+      border-radius: 4px;
+      border: 1px solid #475569;
+      background-color: #ffffff;
+      color: #1f2937;
+      font-size: 13px;
+      width: 230px;
+      outline: none;
+    }
+
+    .search-box:focus {
+      border-color: #38bdf8;
+    }
+
+    .search-results {
+      position: absolute;
+      top: 38px;
+      left: 0;
+      width: 230px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      max-height: 220px;
+      overflow-y: auto;
+      display: none;
+      z-index: 1100;
+    }
+
+    .search-item {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #1f2937;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .search-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-item:hover {
+      background-color: #f1f5f9;
+    }
+
+    .search-item small {
+      display: block;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .btn-identitas {
+      padding: 7px 14px;
+      background-color: #334155;
+      color: #ffffff;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-identitas:hover {
+      background-color: #475569;
+    }
+
+    /* Peta Full Screen */
+    #map {
+      width: 100%;
+      height: calc(100vh - 60px);
+    }
+
+    /* Tombol Reset View */
+    .reset-control {
+      background: #ffffff;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1f2937;
+      cursor: pointer;
+    }
+
+    .reset-control:hover {
+      background: #f8fafc;
+    }
+
+    /* Legenda & Kontrol Layer Kanan Bawah */
+    .legend {
+      background: #ffffff;
+      padding: 12px 14px;
+      border-radius: 4px;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.25);
+      font-size: 12px;
+      line-height: 1.6;
+      min-width: 220px;
+    }
+
+    .legend-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #0f172a;
+    }
+
+    .legend-divider {
+      border: 0;
+      border-top: 1px solid #e2e8f0;
+      margin: 8px 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+
+    .legend-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .legend-check input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: #1e293b;
+    }
+
+    .legend-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+    }
+
+    .legend-home {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #1e293b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .legend-ring {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      border-width: 1.5px;
+      border-style: solid;
+      flex-shrink: 0;
+    }
+
+    /* Pop-up */
+    .popup-content {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .popup-content a {
+      color: #0284c7;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .popup-content a:hover {
+      text-decoration: underline;
+    }
+
+    /* Modal Identitas */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 6px;
+      padding: 22px 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-card h3 {
+      font-size: 16px;
+      color: #0f172a;
+      margin-bottom: 10px;
+    }
+
+    .modal-card p {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .identitas-box {
+      background: #f8fafc;
+      border-left: 3px solid #1e293b;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+    }
+
+    .identitas-nama {
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .identitas-nia {
+      font-size: 13px;
+      color: #475569;
+      margin-top: 2px;
+    }
+
+    .btn-tutup {
+      width: 100%;
+      padding: 8px;
+      background: #1e293b;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-tutup:hover {
+      background: #334155;
+    }
+
+    @media (max-width: 640px) {
+      .navbar {
+        flex-direction: column;
+        height: auto;
+        padding: 10px 14px;
+        gap: 8px;
+        align-items: flex-start;
+      }
+      #map {
+        height: calc(100vh - 88px);
+      }
+      .search-box, .search-results {
+        width: 190px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="navbar-title">Peta Sebaran Domisili Anggota Racana Gadjah Mada</div>
+    <div class="navbar-actions">
+      <input type="text" id="searchInput" class="search-box" placeholder="Cari nama anggota..." autocomplete="off" />
+      <div id="searchResults" class="search-results"></div>
+      <button type="button" id="btnIdentitas" class="btn-identitas">Identitas</button>
+    </div>
+  </header>
+
+  <!-- Kontainer Peta -->
+  <div id="map"></div>
+
+  <!-- Modal Identitas -->
+  <div id="modalIdentitas" class="modal-overlay">
+    <div class="modal-card">
+      <h3>Tentang Peta</h3>
+      <p>Sistem Informasi Geografis berbasis web untuk memetakan sebaran tempat tinggal anggota Racana Gadjah Mada di wilayah Yogyakarta.</p>
+      <div class="identitas-box">
+        <div class="identitas-nama">Riegel Vega Al Thair, CD</div>
+        <div class="identitas-nia">NIA 03073.25.362</div>
+      </div>
+      <button type="button" id="btnTutupModal" class="btn-tutup">Tutup</button>
+    </div>
+  </div>
+
+  <!-- Pustaka Leaflet & Data Spasial -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data.js"></script>
+
+  <script>
+    // 1. Titik Tengah Awal: Sekretariat UKM Pramuka UGM
+    const pusatUGM = [-7.771183316193402, 110.37335912566563];
+    const zoomAwal = 13;
+
+    const map = L.map('map').setView(pusatUGM, zoomAwal);
+
+    // 2. Pilihan Peta Dasar (Basemap)
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const satelitLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: '&copy; Esri'
+    });
+
+    L.control.layers({
+      "Peta Jalan": osmLayer,
+      "Citra Satelit": satelitLayer
+    }).addTo(map);
+
+    // 3. Tombol Reset View ke Sanggar Bakti
+    const ResetControl = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd: function () {
+        const btn = L.DomUtil.create('button', 'reset-control');
+        btn.innerHTML = 'Menuju SB';
+        btn.title = 'Kembali ke Sanggar Bakti Pramuka UGM';
+        btn.onclick = function (e) {
+          L.DomEvent.stopPropagation(e);
+          map.setView(pusatUGM, zoomAwal);
+        };
+        return btn;
+      }
+    });
+    map.addControl(new ResetControl());
+
+    // 4. Lingkaran Radius (5 km Merah, 3 km Hijau, 1 km Biru)
+    const radius5km = L.circle(pusatUGM, {
+      radius: 5000,
+      color: '#b91c1c',
+      weight: 1.5,
+      fillColor: '#b91c1c',
+      fillOpacity: 0.15,
+      interactive: false
+    }).addTo(map);
+
+    const radius3km = L.circle(pusatUGM, {
+      radius: 3000,
+      color: '#15803d',
+      weight: 1.5,
+      fillColor: '#15803d',
+      fillOpacity: 0.15,
+      interactive: false
+    }).addTo(map);
+
+    const radius1km = L.circle(pusatUGM, {
+      radius: 1000,
+      color: '#1d4ed8',
+      weight: 1.5,
+      fillColor: '#1d4ed8',
+      fillOpacity: 0.15,
+      interactive: false
+    }).addTo(map);
+
+    // 5. Marker Ikon Rumah: Sekretariat UKM Pramuka UGM
+    const ikonRumah = L.divIcon({
+      className: 'custom-home-icon',
+      html: `<div style="background:#1e293b; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #ffffff; box-shadow:0 2px 5px rgba(0,0,0,0.4);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </div>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      popupAnchor: [0, -14]
+    });
+
+    const markerSekretariat = L.marker(pusatUGM, {
+      icon: ikonRumah,
+      zIndexOffset: 1000
+    }).addTo(map);
+
+    markerSekretariat.bindPopup(`
+      <div class="popup-content">
+        <strong>Sekretariat UKM Pramuka UGM</strong><br>
+        Sanggar Bakti Racana Gadjah Mada
+      </div>
+    `);
+    markerSekretariat.bindTooltip("Sekretariat UKM Pramuka UGM");
+
+    // 6. Penentuan Warna Berdasarkan Kategori Anggota
+    function getWarnaKategori(kategori) {
+      if (kategori === "Asrama") return "#1d4ed8";
+      if (kategori === "Kos atau Kontrakan") return "#0d9488";
+      return "#d97706"; // Rumah Pribadi atau Keluarga
+    }
+
+    // 7. Render Titik GeoJSON Anggota, Jarak ke SB, Tautan Google Maps & Anti-Tumpuk
+    const daftarAnggota = [];
+    const koordinatTerpakai = {};
+
+    const geoJsonLayer = L.geoJSON(dataDomisili, {
+      pointToLayer: function (feature, latlng) {
+        const kunci = latlng.lat.toFixed(5) + "," + latlng.lng.toFixed(5);
+        let posisi = latlng;
+
+        if (koordinatTerpakai[kunci]) {
+          posisi = L.latLng(latlng.lat + 0.00012, latlng.lng + 0.00012);
+        }
+        koordinatTerpakai[kunci] = true;
+
+        return L.circleMarker(posisi, {
+          radius: 8,
+          fillColor: getWarnaKategori(feature.properties.kategori),
+          color: "#ffffff",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.95
+        });
+      },
+      onEachFeature: function (feature, layer) {
+        const p = feature.properties;
+        const [lon, lat] = feature.geometry.coordinates;
+
+        // Hitung jarak lurus dari Sanggar Bakti (dalam km)
+        const jarakMeter = L.latLng(pusatUGM).distanceTo([lat, lon]);
+        const jarakKm = (jarakMeter / 1000).toFixed(2).replace('.', ',');
+
+        // Tautan langsung ke Google Maps / Street View
+        const gmapsLink = `https://www.google.com/maps?q=${lat},${lon}`;
+
+        const isiPopup = `
+          <div class="popup-content">
+            <strong>${p.nama}</strong><br>
+            Kategori: ${p.kategori}<br>
+            Jarak dari SB: ${jarakKm} km<br>
+            Patokan: ${p.patokan}<br>
+            WA: <a href="${p.wa_link}" target="_blank" rel="noopener">${p.wa_tampil}</a><br>
+            Lokasi: <a href="${gmapsLink}" target="_blank" rel="noopener">Buka di Google Maps</a>
+          </div>
+        `;
+        layer.bindPopup(isiPopup);
+        layer.bindTooltip(p.nama);
+
+        daftarAnggota.push({
+          nama: p.nama,
+          kategori: p.kategori,
+          layer: layer
+        });
+      }
+    }).addTo(map);
+
+    // 8. Legenda & Kontrol Centang Radius di Kanan Bawah
+    const legend = L.control({ position: 'bottomright' });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'legend');
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.disableScrollPropagation(div);
+
+      div.innerHTML = `
+        <div class="legend-title">Kategori Tempat Tinggal</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#1d4ed8"></span> Asrama</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#0d9488"></span> Kos atau Kontrakan</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#d97706"></span> Rumah Pribadi / Keluarga</div>
+        <hr class="legend-divider" />
+        <div class="legend-title">Titik Pusat & Radius</div>
+        <label class="legend-check">
+          <input type="checkbox" id="chkPusat" checked />
+          <span class="legend-home">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </span>
+          Sekretariat Pramuka UGM
+        </label>
+        <label class="legend-check">
+          <input type="checkbox" id="chk1km" checked />
+          <span class="legend-ring" style="border-color:#1d4ed8; background:rgba(29,78,216,0.15)"></span> Radius 1 km
+        </label>
+        <label class="legend-check">
+          <input type="checkbox" id="chk3km" checked />
+          <span class="legend-ring" style="border-color:#15803d; background:rgba(21,128,61,0.15)"></span> Radius 3 km
+        </label>
+        <label class="legend-check">
+          <input type="checkbox" id="chk5km" checked />
+          <span class="legend-ring" style="border-color:#b91c1c; background:rgba(185,28,28,0.15)"></span> Radius 5 km
+        </label>
+      `;
+      return div;
+    };
+    legend.addTo(map);
+
+    // Event listener untuk tiap kotak centang
+    function aturToggleLayer(checkboxId, layer) {
+      document.getElementById(checkboxId).addEventListener('change', function () {
+        if (this.checked) {
+          map.addLayer(layer);
+        } else {
+          map.removeLayer(layer);
+        }
+        geoJsonLayer.bringToFront();
+      });
+    }
+
+    aturToggleLayer('chkPusat', markerSekretariat);
+    aturToggleLayer('chk1km', radius1km);
+    aturToggleLayer('chk3km', radius3km);
+    aturToggleLayer('chk5km', radius5km);
+
+    // 9. Fitur Pencarian Nama
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+
+    function fokusKeAnggota(item) {
+      const targetLatLng = item.layer.getLatLng();
+      map.setView(targetLatLng, 16);
+      item.layer.openPopup();
+      searchResults.style.display = 'none';
+      searchInput.value = item.nama;
+    }
+
+    searchInput.addEventListener('input', function () {
+      const kataKunci = this.value.trim().toLowerCase();
+      searchResults.innerHTML = '';
+
+      if (!kataKunci) {
+        searchResults.style.display = 'none';
+        return;
+      }
+
+      const hasil = daftarAnggota.filter(a => a.nama.toLowerCase().includes(kataKunci));
+
+      if (hasil.length === 0) {
+        searchResults.innerHTML = '<div class="search-item">Nama tidak ditemukan</div>';
+      } else {
+        hasil.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'search-item';
+          div.innerHTML = `${item.nama}<small>${item.kategori}</small>`;
+          div.onclick = () => fokusKeAnggota(item);
+          searchResults.appendChild(div);
+        });
+      }
+      searchResults.style.display = 'block';
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        const kataKunci = this.value.trim().toLowerCase();
+        const hasil = daftarAnggota.filter(a => a.nama.toLowerCase().includes(kataKunci));
+        if (hasil.length > 0) {
+          fokusKeAnggota(hasil[0]);
+        }
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.navbar-actions')) {
+        searchResults.style.display = 'none';
+      }
+    });
+
+    // 10. Kontrol Modal Identitas
+    const modal = document.getElementById('modalIdentitas');
+    document.getElementById('btnIdentitas').onclick = () => modal.style.display = 'flex';
+    document.getElementById('btnTutupModal').onclick = () => modal.style.display = 'none';
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+    };
+  </script>
+</body>
+</html>
