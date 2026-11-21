@@ -221,6 +221,23 @@ const dataDomisili = {
         "wa_tampil": "088227873272",
         "wa_link": "https://wa.me/6288227873272"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          110.38591981223053,
+          -7.794337610160776
+        ]
+      },
+      "properties": {
+        "nama": "Muhammad Azmi Fathin",
+        "kategori": "Rumah Pribadi atau Keluarga",
+        "patokan": "Masuk gang kecil",
+        "wa_tampil": "085772015745",
+        "wa_link": "https://wa.me/6285772015745"
+      }
     }
   ]
 };
